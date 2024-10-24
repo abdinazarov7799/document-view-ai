@@ -3,14 +3,37 @@ import cv from 'opencv.js'; // OpenCV.js ni import qilamiz
 
 const Camera = () => {
     const videoRef = useRef(null);
+    const [devices, setDevices] = useState([]);
+    const [selectedDeviceId, setSelectedDeviceId] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
 
+    // Kameralar ro'yxatini olish
+    useEffect(() => {
+        navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
+            const videoDevices = deviceInfos.filter(device => device.kind === 'videoinput');
+            setDevices(videoDevices);
+            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
+            setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
+        });
+    }, []);
+
+    // Kamerani ishga tushirish
+    useEffect(() => {
+        if (selectedDeviceId) {
+            startCamera();
+        }
+    }, [selectedDeviceId]);
+
     const startCamera = async () => {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            videoRef.current.srcObject = stream;
-        } catch (err) {
-            console.error("Kamera ochishda xatolik: ", err);
+        if (selectedDeviceId) {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { deviceId: { exact: selectedDeviceId } }
+                });
+                videoRef.current.srcObject = stream;
+            } catch (err) {
+                console.error("Kamera ochishda xatolik: ", err);
+            }
         }
     };
 
@@ -48,6 +71,11 @@ const Camera = () => {
     return (
         <div>
             <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
+            <select onChange={(e) => setSelectedDeviceId(e.target.value)}>
+                {devices.map((device) => (
+                    <option key={device.deviceId} value={device.deviceId}>{device.label}</option>
+                ))}
+            </select>
             <button onClick={startCamera}>Kamerani yoqish</button>
             <button onClick={captureImage}>Suratga olish va qirqish</button>
             {capturedImage && (
