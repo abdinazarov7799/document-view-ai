@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import cv from 'opencv.js'; // OpenCV.js ni import qilamiz
+import cv from 'opencv.js';
 
 const Camera = () => {
     const videoRef = useRef(null);
@@ -12,8 +12,9 @@ const Camera = () => {
         navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
             const videoDevices = deviceInfos.filter(device => device.kind === 'videoinput');
             setDevices(videoDevices);
-            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
-            setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
+            if (videoDevices.length > 0) {
+                setSelectedDeviceId(videoDevices[0].deviceId); // Default camera
+            }
         });
     }, []);
 
@@ -25,15 +26,13 @@ const Camera = () => {
     }, [selectedDeviceId]);
 
     const startCamera = async () => {
-        if (selectedDeviceId) {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: { exact: selectedDeviceId } }
-                });
-                videoRef.current.srcObject = stream;
-            } catch (err) {
-                console.error("Kamera ochishda xatolik: ", err);
-            }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined }
+            });
+            videoRef.current.srcObject = stream;
+        } catch (err) {
+            console.error("Kamera ochishda xatolik: ", err);
         }
     };
 
@@ -49,18 +48,17 @@ const Camera = () => {
         // OpenCV bilan tasvirni qayta ishlash
         const src = cv.imread(canvas);
         const dst = new cv.Mat();
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0); // Oq-qora rangga o‘tkazish
+        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
         const contours = new cv.MatVector();
         const hierarchy = new cv.Mat();
         cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
 
-        // Avtomatik aniqlash va qirqish
         if (contours.size() > 0) {
             const rect = cv.boundingRect(contours.get(0));
-            cv.rectangle(dst, rect, [255, 0, 0, 255], 2); // Qirqilgan joyni ko‘rsatish
+            cv.rectangle(dst, rect, [255, 0, 0, 255], 2); // Qirqilgan joyni ko'rsatish
         }
 
-        cv.imshow(canvas, dst); // Yangilangan tasvirni ko‘rsatish
+        cv.imshow(canvas, dst);
 
         src.delete();
         dst.delete();
@@ -73,7 +71,9 @@ const Camera = () => {
             <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
             <select onChange={(e) => setSelectedDeviceId(e.target.value)}>
                 {devices.map((device) => (
-                    <option key={device.deviceId} value={device.deviceId}>{device.label}</option>
+                    <option key={device.deviceId} value={device.deviceId}>
+                        {device.label || `Camera ${device.deviceId}`}
+                    </option>
                 ))}
             </select>
             <button onClick={startCamera}>Kamerani yoqish</button>
