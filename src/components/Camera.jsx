@@ -13,7 +13,7 @@ const Camera = () => {
         navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
             const videoDevices = deviceInfos.filter(device => device.kind === 'videoinput');
             setDevices(videoDevices);
-            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back') && !device.label.includes('0.5x')) || videoDevices[0];
+            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back') && !device.label.includes('0.5x')) || videoDevices[1];
 
             setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
         });
@@ -44,19 +44,28 @@ const Camera = () => {
         canvas.height = videoRef.current.videoHeight;
         const context = canvas.getContext('2d');
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+
+        // Oq-qora formatga aylantirish
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const avg = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            data[i] = avg; // qizil
+            data[i + 1] = avg; // yashil
+            data[i + 2] = avg; // ko'k
+        }
+        context.putImageData(imageData, 0, 0);
+
         const dataUrl = canvas.toDataURL(); // Surat olish
-        setCapturedImage(dataUrl); // Rasmni ko‘rsatish uchun saqlaymiz
+        setCapturedImage(dataUrl); // Olingan rasmni ko‘rsatish
 
         // OCR matnni tanib olish
-        Tesseract.recognize(
-            dataUrl,
-            'eng',
-            {
-                tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-            }
-        )
+        Tesseract.recognize(dataUrl, 'eng')
             .then(({ data: { text } }) => {
-                setOcrResult(text);
+                setOcrResult(text); // OCR natijasi
+            })
+            .catch(err => {
+                console.error("OCR xatosi: ", err);
             });
     };
 
