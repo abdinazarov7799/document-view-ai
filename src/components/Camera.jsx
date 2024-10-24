@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 const Camera = () => {
     const videoRef = useRef(null);
@@ -15,11 +15,17 @@ const Camera = () => {
         });
     }, []);
 
+    useEffect(() => {
+        if (selectedDeviceId) {
+            startCamera();
+        }
+    }, [selectedDeviceId]);
+
     const startCamera = async () => {
         if (selectedDeviceId) {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { deviceId: selectedDeviceId }
+                    video: { deviceId: { exact: selectedDeviceId } }
                 });
                 videoRef.current.srcObject = stream;
             } catch (err) {
