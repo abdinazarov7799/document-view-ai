@@ -13,7 +13,8 @@ const Camera = () => {
         navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
             const videoDevices = deviceInfos.filter(device => device.kind === 'videoinput');
             setDevices(videoDevices);
-            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
+            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back') && !device.label.includes('0.5x')) || videoDevices[0];
+
             setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
         });
     }, []);
@@ -47,12 +48,15 @@ const Camera = () => {
         setCapturedImage(dataUrl); // Rasmni ko‘rsatish uchun saqlaymiz
 
         // OCR matnni tanib olish
-        Tesseract.recognize(dataUrl, 'eng')
+        Tesseract.recognize(
+            dataUrl,
+            'eng',
+            {
+                tessedit_char_whitelist: '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            }
+        )
             .then(({ data: { text } }) => {
-                setOcrResult(text); // OCR natijasini saqlaymiz
-            })
-            .catch(err => {
-                console.error("OCR xatosi: ", err);
+                setOcrResult(text);
             });
     };
 
