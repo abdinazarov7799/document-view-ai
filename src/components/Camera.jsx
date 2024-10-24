@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import cv from 'opencv.js';
 
 const Camera = () => {
     const videoRef = useRef(null);
@@ -46,19 +45,19 @@ const Camera = () => {
         setCapturedImage(dataUrl);
 
         // OpenCV bilan tasvirni qayta ishlash
-        const src = cv.imread(canvas);
-        const dst = new cv.Mat();
-        cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
-        const contours = new cv.MatVector();
-        const hierarchy = new cv.Mat();
-        cv.findContours(dst, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+        const src = window.cv.imread(canvas);
+        const dst = new window.cv.Mat();
+        window.cv.cvtColor(src, dst, window.cv.COLOR_RGBA2GRAY, 0);
+        const contours = new window.cv.MatVector();
+        const hierarchy = new window.cv.Mat();
+        window.cv.findContours(dst, contours, hierarchy, window.cv.RETR_EXTERNAL, window.cv.CHAIN_APPROX_SIMPLE);
 
         if (contours.size() > 0) {
-            const rect = cv.boundingRect(contours.get(0));
-            cv.rectangle(dst, rect, [255, 0, 0, 255], 2); // Qirqilgan joyni ko'rsatish
+            const rect = window.cv.boundingRect(contours.get(0));
+            window.cv.rectangle(dst, rect, [255, 0, 0, 255], 2); // Qirqilgan joyni ko'rsatish
         }
 
-        cv.imshow(canvas, dst);
+        window.cv.imshow(canvas, dst);
 
         src.delete();
         dst.delete();
