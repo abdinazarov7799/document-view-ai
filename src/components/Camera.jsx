@@ -1,9 +1,13 @@
 import React, { useRef, useState, useEffect } from 'react';
+import cv from 'opencv.js'; // OpenCV import qilingan
+import Tesseract from 'tesseract.js'; // OCR uchun
 
 const Camera = () => {
     const videoRef = useRef(null);
+    const canvasRef = useRef(null);
     const [devices, setDevices] = useState([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState(null);
+    const [capturedImage, setCapturedImage] = useState(null);
 
     useEffect(() => {
         // Kameralar ro'yxatini olish
@@ -28,6 +32,7 @@ const Camera = () => {
                     video: { deviceId: { exact: selectedDeviceId } }
                 });
                 videoRef.current.srcObject = stream;
+                setCapturedImage(null); // Videoni qaytarish
             } catch (err) {
                 console.error("Kamera ochishda xatolik: ", err);
             }
@@ -35,18 +40,29 @@ const Camera = () => {
     };
 
     const captureImage = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = canvasRef.current;
         canvas.width = videoRef.current.videoWidth;
         canvas.height = videoRef.current.videoHeight;
         const context = canvas.getContext('2d');
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL(); // Surat olish
-        console.log('Surat olingan:', dataUrl);
+
+        const dataUrl = canvas.toDataURL(); // Tasvir olish
+        setCapturedImage(dataUrl); // Suratni video o'rniga qo'yish
+
+        // OCR orqali matnni o'qish
+        Tesseract.recognize(dataUrl, 'eng').then(({ data: { text } }) => {
+            console.log("OCR natija:", text);
+        });
     };
 
     return (
         <div>
-            <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
+            {capturedImage ? (
+                <img src={capturedImage} alt="Olingan surat" style={{ width: '100%' }} />
+            ) : (
+                <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
+            )}
+            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
             <button onClick={startCamera}>Kamerani yoqish</button>
             <button onClick={captureImage}>Suratga olish</button>
             <select onChange={(e) => setSelectedDeviceId(e.target.value)}>
