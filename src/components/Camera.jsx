@@ -13,8 +13,8 @@ const Camera = () => {
         navigator.mediaDevices.enumerateDevices().then((deviceInfos) => {
             const videoDevices = deviceInfos.filter(device => device.kind === 'videoinput');
             setDevices(videoDevices);
-            const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back') && !device.label.includes('0.5x')) || videoDevices[1];
-
+            const backCamera = videoDevices[1];
+            console.log(videoDevices,'videoDevices')
             setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
         });
     }, []);
