@@ -1,12 +1,12 @@
 import React, { useRef, useState, useEffect } from 'react';
-import Tesseract from 'tesseract.js'; // OCR uchun
+import Tesseract from 'tesseract.js'; // Tesseract.js ni import qilamiz
 
 const Camera = () => {
     const videoRef = useRef(null);
-    const canvasRef = useRef(null);
     const [devices, setDevices] = useState([]);
     const [selectedDeviceId, setSelectedDeviceId] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
+    const [ocrResult, setOcrResult] = useState(''); // OCR natijasi uchun
 
     useEffect(() => {
         // Kameralar ro'yxatini olish
@@ -16,14 +16,6 @@ const Camera = () => {
             const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
             setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
         });
-
-        const waitForOpenCV = setInterval(() => {
-            if (window.cv) {
-                console.log('OpenCV yuklandi');
-                clearInterval(waitForOpenCV);
-            }
-        }, 100);
-
     }, []);
 
     useEffect(() => {
@@ -39,7 +31,6 @@ const Camera = () => {
                     video: { deviceId: { exact: selectedDeviceId } }
                 });
                 videoRef.current.srcObject = stream;
-                setCapturedImage(null); // Videoni qaytarish
             } catch (err) {
                 console.error("Kamera ochishda xatolik: ", err);
             }
@@ -47,29 +38,27 @@ const Camera = () => {
     };
 
     const captureImage = () => {
-        const canvas = canvasRef.current;
+        const canvas = document.createElement('canvas');
         canvas.width = videoRef.current.videoWidth;
         canvas.height = videoRef.current.videoHeight;
         const context = canvas.getContext('2d');
         context.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL(); // Surat olish
+        setCapturedImage(dataUrl); // Rasmni ko‘rsatish uchun saqlaymiz
 
-        const dataUrl = canvas.toDataURL(); // Tasvir olish
-        setCapturedImage(dataUrl); // Suratni video o'rniga qo'yish
-
-        // OCR orqali matnni o'qish
-        Tesseract.recognize(dataUrl, 'eng').then(({ data: { text } }) => {
-            console.log("OCR natija:", text);
-        });
+        // OCR matnni tanib olish
+        Tesseract.recognize(dataUrl, 'eng')
+            .then(({ data: { text } }) => {
+                setOcrResult(text); // OCR natijasini saqlaymiz
+            })
+            .catch(err => {
+                console.error("OCR xatosi: ", err);
+            });
     };
 
     return (
         <div>
-            {capturedImage ? (
-                <img src={capturedImage} alt="Olingan surat" style={{ width: '100%' }} />
-            ) : (
-                <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
-            )}
-            <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+            <video ref={videoRef} autoPlay style={{ width: '100%' }}></video>
             <button onClick={startCamera}>Kamerani yoqish</button>
             <button onClick={captureImage}>Suratga olish</button>
             <select onChange={(e) => setSelectedDeviceId(e.target.value)}>
@@ -77,6 +66,22 @@ const Camera = () => {
                     <option key={device.deviceId} value={device.deviceId}>{device.label}</option>
                 ))}
             </select>
+
+            {/* Olingan rasmni ko‘rsatish */}
+            {capturedImage && (
+                <div>
+                    <h3>Olingan rasm:</h3>
+                    <img src={capturedImage} alt="Olingan rasm" style={{ width: '100%' }} />
+                </div>
+            )}
+
+            {/* OCR natijasini ko‘rsatish */}
+            {ocrResult && (
+                <div>
+                    <h3>OCR natijasi:</h3>
+                    <p>{ocrResult}</p>
+                </div>
+            )}
         </div>
     );
 };
