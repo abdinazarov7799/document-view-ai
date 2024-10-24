@@ -1,5 +1,4 @@
 import React, { useRef, useState, useEffect } from 'react';
-import cv from 'opencv.js'; // OpenCV import qilingan
 import Tesseract from 'tesseract.js'; // OCR uchun
 
 const Camera = () => {
@@ -17,6 +16,14 @@ const Camera = () => {
             const backCamera = videoDevices.find(device => device.label.toLowerCase().includes('back')) || videoDevices[0];
             setSelectedDeviceId(backCamera.deviceId); // Default orqa kamera
         });
+
+        const waitForOpenCV = setInterval(() => {
+            if (window.cv) {
+                console.log('OpenCV yuklandi');
+                clearInterval(waitForOpenCV);
+            }
+        }, 100);
+
     }, []);
 
     useEffect(() => {
